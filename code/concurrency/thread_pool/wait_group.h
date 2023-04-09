@@ -45,7 +45,7 @@ namespace tp {
             return *reinterpret_cast<atomic<uint32_t>*>(&state_);
         }
 
-    private:
+     private:
         atomic<size_t> counter_{0};
         atomic<size_t> state_{State::Empty};
     };
