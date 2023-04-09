@@ -5,7 +5,7 @@
 namespace tp {
 
     class WaitGroup {
-    public:
+     public:
         // += count
         void Add(size_t count) {
             counter_.fetch_add(count);
@@ -33,7 +33,7 @@ namespace tp {
             }
         }
 
-    private:
+     private:
         enum State : size_t {
             Empty = 0,
             NonEmpty = 1,
