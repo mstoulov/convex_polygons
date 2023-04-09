@@ -1,15 +1,13 @@
 #include <bits/stdc++.h>
-#include <immintrin.h>
 #include "geometry.h"
 #include "concurrency/thread_pool/thread_pool.h"
 #include "concurrency/barrier.h"
 #include "aligned_allocator.h"
-#include <thread>
 
 using namespace std;
 
 
-void kek(int C) {
+void count_and_write_polygons(int C) {
     using ans_t = double;
     vector<vec<int>> vv;
     vv.push_back({0, 1});
@@ -57,8 +55,6 @@ void kek(int C) {
                     barrier.ArriveAndWait();
                 }
 
-                //barrier.ArriveAndWait();
-
                 for (int i = kSize * thread_num; i < min(C, kSize * (thread_num + 1)); ++i) {
                     for (int j = 0; j < C; j += 1) {
                         prev_dp[i][j] = dp_convex_quarter[i][j];
@@ -82,7 +78,7 @@ void kek(int C) {
             per_thread_accurate(thread_cnt, vector<vector<ans_t, AlignedAllocator<ans_t, Alignment::AVX>>>
             (C, vector<ans_t, AlignedAllocator<ans_t, Alignment::AVX>>(C, 0)));
 
-    const ans_t multiplier = 1; // use all range of double
+    const ans_t multiplier = 1e-300; // use all range of double
     for (int thread_num = 0; thread_num < thread_cnt; ++thread_num) {
         pool.Submit([&dp_convex_quarter, &convex_half, &barrier, &accurate = per_thread_accurate[thread_num],
                             thread_num, kSize, C, multiplier]() mutable {
@@ -113,7 +109,7 @@ void kek(int C) {
     pool.Stop();
     cout << "second part in " << (chrono::high_resolution_clock::now() - st).count() / 1e9 << " seconds\n";
 
-    using final_ans_t = double;
+    using final_ans_t = long double;
     vector<vector<final_ans_t, AlignedAllocator<final_ans_t, Alignment::AVX>>>
             accurate(C, vector<final_ans_t, AlignedAllocator<final_ans_t, Alignment::AVX>>(C, -2)); // not take into account rectangle diagonals
 
@@ -123,7 +119,7 @@ void kek(int C) {
     }
     accurate[0][0] -= 1;
 
-    const final_ans_t inv_multiplier = 1;
+    const final_ans_t inv_multiplier = 1e300;
     for (int k = 0; k < thread_cnt; ++k) {
         for (int i = 0; i < C; ++i) {
             for (int j = 0; j < C; ++j) {
@@ -169,7 +165,7 @@ void kek(int C) {
 
 int main() {
     auto st = chrono::high_resolution_clock::now();
-    kek(100);
+    count_and_write_polygons(100);
     cout << "total time " << (chrono::high_resolution_clock::now() - st).count() / 1e9 << "\n";
     return 0;
 }
