@@ -1,5 +1,4 @@
 #pragma once
-
 #include "bits/stdc++.h"
 
 
@@ -9,29 +8,46 @@ namespace tp {
     public:
         // += count
         void Add(size_t count) {
-            empty_.store(0);
             counter_.fetch_add(count);
+            state_.store(State::NonEmpty | State::InAdd);
         }
 
         // =- 1
         void Done() {
+            state_.store(State::NonEmpty | State::InDone);
+
             if (counter_.fetch_sub(1) == 1) {
-                empty_.store(1);
-                empty_.notify_all();
+                size_t expected = State::NonEmpty | State::InDone;
+
+                if (state_.compare_exchange_strong(expected, State::Empty)) {
+                    GetEmptinessState().notify_all();
+                }
             }
         }
 
         // == 0
         // One-shot
         void Wait() {
-            while (empty_.load() != 1) {
-                empty_.wait(0);
+            while (GetEmptinessState().load() == State::NonEmpty) {
+                GetEmptinessState().wait(State::NonEmpty);
             }
         }
 
     private:
-        std::atomic<uint32_t> counter_{0};
-        std::atomic<uint32_t> empty_{1};
+        enum State : size_t {
+            Empty = 0,
+            NonEmpty = 1,
+            InAdd = 0,
+            InDone = 1ull << 32  // doesn't affect on Emptiness (uint32_t) for futex
+        };
+
+        atomic<uint32_t>& GetEmptinessState() {
+            return *reinterpret_cast<atomic<uint32_t>*>(&state_);
+        }
+
+    private:
+        atomic<size_t> counter_{0};
+        atomic<size_t> state_{State::Empty};
     };
 
 }
