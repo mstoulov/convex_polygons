@@ -31,7 +31,7 @@ void count_and_write_polygons(int C) {
 
     dp_convex_quarter[0][0] = prev_dp[0][0] = 1;
 
-    const int thread_cnt = 8;
+    const size_t thread_cnt = thread::hardware_concurrency();
     const int kSize = (C - 1) / thread_cnt + 1;
 
     tp::ThreadPool pool(thread_cnt);
@@ -42,7 +42,7 @@ void count_and_write_polygons(int C) {
     auto st = chrono::high_resolution_clock::now();
 
     for (int thread_num = 0; thread_num < thread_cnt; ++thread_num) {
-        pool.Submit([&dp_convex_quarter, &prev_dp, &vv, &barrier, thread_num, kSize, C]() mutable {
+        pool.Submit([&dp_convex_quarter, &prev_dp, &vv, &barrier, thread_num, kSize, C, thread_cnt]() mutable {
             for (auto vec : vv) {
                 for (int dx = vec.x, dy = vec.y; dx < C && dy < C; dx += vec.x, dy += vec.y) {
                     int x_block = (C - dx - 1) / thread_cnt + 1;

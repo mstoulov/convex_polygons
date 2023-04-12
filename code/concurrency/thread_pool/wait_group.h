@@ -5,49 +5,37 @@
 namespace tp {
 
     class WaitGroup {
-     public:
+    public:
         // += count
         void Add(size_t count) {
-            counter_.fetch_add(count);
-            state_.store(State::NonEmpty | State::InAdd);
+            std::lock_guard guard(mutex_);
+            counter_ += count;
+            empty_ = false;
         }
 
         // =- 1
         void Done() {
-            state_.store(State::NonEmpty | State::InDone);
-
-            if (counter_.fetch_sub(1) == 1) {
-                size_t expected = State::NonEmpty | State::InDone;
-
-                if (state_.compare_exchange_strong(expected, State::Empty)) {
-                    GetEmptinessState().notify_all();
-                }
+            std::unique_lock lock(mutex_);
+            if (--counter_ == 0) {
+                empty_ = true;
+                is_empty_.notify_all();
             }
         }
 
         // == 0
         // One-shot
         void Wait() {
-            while (GetEmptinessState().load() == State::NonEmpty) {
-                GetEmptinessState().wait(State::NonEmpty);
+            std::unique_lock lock(mutex_);
+            while (!empty_) {
+                is_empty_.wait(lock);
             }
         }
 
-     private:
-        enum State : size_t {
-            Empty = 0,
-            NonEmpty = 1,
-            InAdd = 0,
-            InDone = 1ull << 32  // doesn't affect on Emptiness (uint32_t) for futex
-        };
-
-        atomic<uint32_t>& GetEmptinessState() {
-            return *reinterpret_cast<atomic<uint32_t>*>(&state_);
-        }
-
-     private:
-        atomic<size_t> counter_{0};
-        atomic<size_t> state_{State::Empty};
+    private:
+        size_t counter_{0};
+        bool empty_{true};
+        mutex mutex_;
+        condition_variable is_empty_;
     };
 
 }
