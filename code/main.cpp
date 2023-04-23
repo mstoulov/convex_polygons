@@ -165,7 +165,7 @@ void count_and_write_polygons(int C) {
 
 int main() {
     auto st = chrono::high_resolution_clock::now();
-    count_and_write_polygons(100);
+    count_and_write_polygons(1000);
     cout << "total time " << (chrono::high_resolution_clock::now() - st).count() / 1e9 << "\n";
     return 0;
 }

@@ -34,8 +34,8 @@ namespace tp {
     private:
         size_t counter_{0};
         bool empty_{true};
-        mutex mutex_;
-        condition_variable is_empty_;
+        std::mutex mutex_;
+        std::condition_variable is_empty_;
     };
 
 }
